@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #f1f3f4;
+}
+
+.stApp {
+    background-color: #0d0f14;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(66, 133, 244, 0.16) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.16) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 35px 35px, 35px 35px;
+    background-attachment: fixed;
+}
+
+.gemini-gradient-text {
+    background: linear-gradient(90deg, #4285F4 0%, #a855f7 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+.glass-card {
+    background: rgba(22, 26, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    padding: 22px 26px;
+    margin-bottom: 18px;
+    backdrop-filter: blur(25px);
+    box-shadow: 0 10px 32px 0 rgba(0, 0, 0, 0.45);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(66, 133, 244, 0.45);
+    transform: translateY(-2px);
+}
+
+.stButton > button {
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    font-weight: 500;
+    padding: 8px 20px;
+    transition: all 0.2s ease;
+}
+
+.stButton > button:hover {
+    background: rgba(66, 133, 244, 0.22);
+    border-color: #4285F4;
+    box-shadow: 0 0 16px rgba(66, 133, 244, 0.35);
+}
