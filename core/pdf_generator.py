@@ -15,7 +15,17 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 class PDFReportGenerator:
     @staticmethod
-    def build_pdf_report(patient_id: str, p_data: dict, risk_prob: float, clinical_tier: str, reg_glucose: float, ml_metrics: dict) -> io.BytesIO:
+    def build_pdf_report(
+        patient_id: str,
+        p_data: dict,
+        risk_prob: float,
+        clinical_tier: str,
+        reg_glucose: float,
+        ml_metrics: dict,
+        clinician_info: dict = None,
+        *args,
+        **kwargs
+    ) -> io.BytesIO:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -68,15 +78,19 @@ class PDFReportGenerator:
             textColor=colors.HexColor("#334155")
         )
 
+        doctor_name = clinician_info.get("name", "Self-Assessed Patient Record") if clinician_info else "Self-Assessed Patient Record"
+        license_no = clinician_info.get("license", "PATIENT-SELF-SERVICE") if clinician_info else "PATIENT-SELF-SERVICE"
+        dept = clinician_info.get("department", "Personal Metabolic Profile") if clinician_info else "Personal Metabolic Profile"
+
         story = []
 
-        # Header Title
-        story.append(Paragraph("METABOLIC INTELLIGENCE DIAGNOSTIC DOSSIER", title_style))
-        story.append(Paragraph("Clinical Machine Learning Laboratory • Precision Risk Assessment Report", subtitle_style))
+        # 1. Header Title
+        story.append(Paragraph("METABOLIC INTELLIGENCE CLINICAL REPORT", title_style))
+        story.append(Paragraph(f"{dept} • Attending: {doctor_name} ({license_no})", subtitle_style))
         story.append(Spacer(1, 8))
         story.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor("#3b82f6"), spaceAfter=10))
 
-        # Metadata Table
+        # 2. Metadata Table
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M UTC")
         meta_data = [
             [
@@ -84,8 +98,8 @@ class PDFReportGenerator:
                 Paragraph("<b>Generated Timestamp:</b>", cell_bold), Paragraph(current_time, cell_regular)
             ],
             [
-                Paragraph("<b>Age / Gender:</b>", cell_bold), Paragraph(f"{p_data['age']} yrs / {p_data['gender']}", cell_regular),
-                Paragraph("<b>Diagnostic Model:</b>", cell_bold), Paragraph("Random Forest + Ridge Ensemble", cell_regular)
+                Paragraph("<b>Age / Gender:</b>", cell_bold), Paragraph(f"{p_data.get('age', 0)} yrs / {p_data.get('gender', 'N/A')}", cell_regular),
+                Paragraph("<b>Reviewing Clinician:</b>", cell_bold), Paragraph(doctor_name, cell_regular)
             ]
         ]
         meta_table = Table(meta_data, colWidths=[110, 155, 125, 150])
@@ -101,7 +115,7 @@ class PDFReportGenerator:
         story.append(meta_table)
         story.append(Spacer(1, 10))
 
-        # Risk Banner
+        # 3. Risk Banner
         tier_color = "#10b981" if risk_prob < 35 else ("#f59e0b" if risk_prob < 65 else "#ef4444")
         tier_bg = "#ecfdf5" if risk_prob < 35 else ("#fffbeb" if risk_prob < 65 else "#fef2f2")
         
@@ -118,17 +132,17 @@ class PDFReportGenerator:
         story.append(banner_table)
         story.append(Spacer(1, 10))
 
-        # Clinical Telemetry & Lifestyle
+        # 4. Clinical Telemetry Table
         story.append(Paragraph("1. PATIENT BIOMARKERS & LIFESTYLE ATTRIBUTES", section_style))
         telemetry_data = [
             [Paragraph("<b>Parameter</b>", cell_bold), Paragraph("<b>Observed Value</b>", cell_bold), Paragraph("<b>Standard Reference</b>", cell_bold), Paragraph("<b>Clinical Interpretation</b>", cell_bold)],
-            [Paragraph("Fasting Plasma Glucose", cell_regular), Paragraph(f"{p_data['blood_glucose_level']} mg/dL", cell_bold), Paragraph("< 100 mg/dL", cell_regular), Paragraph("Optimal" if p_data['blood_glucose_level'] <= 100 else ("Borderline (100-125)" if p_data['blood_glucose_level'] <= 125 else "Elevated (>=126)"), cell_regular)],
-            [Paragraph("Glycated Hemoglobin (HbA1c)", cell_regular), Paragraph(f"{p_data['HbA1c_level']}%", cell_bold), Paragraph("< 5.7%", cell_regular), Paragraph("Optimal" if p_data['HbA1c_level'] < 5.7 else ("Prediabetic (5.7-6.4%)" if p_data['HbA1c_level'] < 6.5 else "Diabetic Range (>=6.5%)"), cell_regular)],
-            [Paragraph("Body Mass Index (BMI)", cell_regular), Paragraph(f"{p_data['bmi']} kg/m²", cell_bold), Paragraph("18.5 - 24.9 kg/m²", cell_regular), Paragraph("Normal Weight" if p_data['bmi'] < 25 else "Elevated Adiposity", cell_regular)],
-            [Paragraph("Hypertension History", cell_regular), Paragraph("Documented (Yes)" if p_data['hypertension']==1 else "No History", cell_bold), Paragraph("Normotensive", cell_regular), Paragraph("Cardiovascular Factor" if p_data['hypertension']==1 else "Normal Range", cell_regular)],
-            [Paragraph("Dietary Framework", cell_regular), Paragraph(str(p_data.get('diet_quality', 'Balanced')), cell_bold), Paragraph("Mediterranean / Low-GI", cell_regular), Paragraph("Cardioprotective" if "Mediterranean" in p_data.get('diet_quality','') else "Action Recommended", cell_regular)],
-            [Paragraph("Physical Activity", cell_regular), Paragraph(str(p_data.get('physical_activity', 'Moderate')), cell_bold), Paragraph(">= 150 min/wk", cell_regular), Paragraph("GLUT4 Stimulation" if "150" in p_data.get('physical_activity','') or "300" in p_data.get('physical_activity','') else "Activity Deficit", cell_regular)],
-            [Paragraph("Sleep & Stress", cell_regular), Paragraph(f"{p_data.get('sleep_quality','Optimal')} / {p_data.get('stress_level','Moderate')}", cell_bold), Paragraph("7-9 hrs / Low Stress", cell_regular), Paragraph("Cortisol Regulated", cell_regular)],
+            [Paragraph("Fasting Plasma Glucose", cell_regular), Paragraph(f"{p_data.get('blood_glucose_level', 0)} mg/dL", cell_bold), Paragraph("< 100 mg/dL", cell_regular), Paragraph("Optimal" if p_data.get('blood_glucose_level', 0) <= 100 else ("Borderline (100-125)" if p_data.get('blood_glucose_level', 0) <= 125 else "Elevated (>=126)"), cell_regular)],
+            [Paragraph("Glycated Hemoglobin (HbA1c)", cell_regular), Paragraph(f"{p_data.get('HbA1c_level', 0)}%", cell_bold), Paragraph("< 5.7%", cell_regular), Paragraph("Optimal" if p_data.get('HbA1c_level', 0) < 5.7 else ("Prediabetic (5.7-6.4%)" if p_data.get('HbA1c_level', 0) < 6.5 else "Diabetic Range (>=6.5%)"), cell_regular)],
+            [Paragraph("Body Mass Index (BMI)", cell_regular), Paragraph(f"{p_data.get('bmi', 0)} kg/m²", cell_bold), Paragraph("18.5 - 24.9 kg/m²", cell_regular), Paragraph("Normal Weight" if p_data.get('bmi', 0) < 25 else "Elevated Adiposity", cell_regular)],
+            [Paragraph("Hypertension History", cell_regular), Paragraph("Documented (Yes)" if p_data.get('hypertension', 0) == 1 else "No History", cell_bold), Paragraph("Normotensive", cell_regular), Paragraph("Cardiovascular Factor" if p_data.get('hypertension', 0) == 1 else "Normal Range", cell_regular)],
+            [Paragraph("Dietary Framework", cell_regular), Paragraph(str(p_data.get('diet_quality', 'Balanced')), cell_bold), Paragraph("Mediterranean / Low-GI", cell_regular), Paragraph("Cardioprotective" if "Mediterranean" in p_data.get('diet_quality', '') else "Action Recommended", cell_regular)],
+            [Paragraph("Physical Activity", cell_regular), Paragraph(str(p_data.get('physical_activity', 'Moderate')), cell_bold), Paragraph(">= 150 min/wk", cell_regular), Paragraph("GLUT4 Stimulation" if "150" in p_data.get('physical_activity', '') or "300" in p_data.get('physical_activity', '') else "Activity Deficit", cell_regular)],
+            [Paragraph("Sleep & Stress", cell_regular), Paragraph(f"{p_data.get('sleep_quality', 'Optimal')} / {p_data.get('stress_level', 'Moderate')}", cell_bold), Paragraph("7-9 hrs / Low Stress", cell_regular), Paragraph("Cortisol Regulated", cell_regular)],
         ]
         telemetry_table = Table(telemetry_data, colWidths=[140, 115, 115, 170])
         telemetry_table.setStyle(TableStyle([
@@ -141,7 +155,7 @@ class PDFReportGenerator:
         story.append(telemetry_table)
         story.append(Spacer(1, 10))
 
-        # Model Performance Validation
+        # 5. Model Validation Benchmarks
         story.append(Paragraph("2. MACHINE LEARNING MODEL PERFORMANCE VALIDATION", section_style))
         ml_data = [
             [Paragraph("<b>Evaluation Metric</b>", cell_bold), Paragraph("<b>Random Forest</b>", cell_bold), Paragraph("<b>Logistic Regression</b>", cell_bold), Paragraph("<b>Ridge Regressor (Glucose)</b>", cell_bold)],
@@ -162,7 +176,7 @@ class PDFReportGenerator:
         story.append(ml_table)
         story.append(Spacer(1, 10))
 
-        # Prescription & Action Plan
+        # 6. Prescriptions
         story.append(Paragraph("3. CLINICAL ACTION PLAN & LIFESTYLE PRESCRIPTION", section_style))
         proto_data = [
             [Paragraph("<b>Pillar</b>", cell_bold), Paragraph("<b>Prescribed Protocol</b>", cell_bold)],
@@ -180,9 +194,9 @@ class PDFReportGenerator:
         story.append(proto_table)
         story.append(Spacer(1, 12))
 
-        # Sign-off Footer
+        # 7. Sign-off Footer
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#cbd5e1"), spaceAfter=6))
-        story.append(Paragraph("Authorized Machine Learning Clinical Report • Validated Diagnostic Algorithms • Confidential Telemetry", subtitle_style))
+        story.append(Paragraph(f"Digitally Certified by: {doctor_name} ({license_no}) • Confidential Medical Telemetry", subtitle_style))
 
         doc.build(story)
         buffer.seek(0)
